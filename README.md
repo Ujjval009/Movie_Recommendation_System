@@ -376,36 +376,11 @@ Movie_Recommendation_System/
 
 ---
 
-## 🤝 Contributing
 
-Contributions are welcome! Here's how to get started:
 
-1. **Fork** the repository
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit your changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to the branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
-
-Please ensure your code follows the existing style conventions and includes appropriate documentation.
-
----
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** 
 
----
 
-<div align="center">
-  <br/>
-  <p>
-    Built with ❤️ using <strong>Python</strong>, <strong>React</strong>, and <strong>scikit-learn</strong>
-  </p>
-  <p>
-    <a href="https://www.themoviedb.org/">
-      <img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_1-5bdc75aaebeb75ec7ae94c1a9c1d5e9e1c7c1c9e1b9e1c7c1c9e1b9e1c7c1c9e1.svg" height="20" alt="TMDB"/>
-    </a>
-    &nbsp;— Data provided by TMDB
-  </p>
-  <br/>
-</div>
