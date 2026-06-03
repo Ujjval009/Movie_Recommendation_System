@@ -3,8 +3,6 @@ import pickle
 import hashlib
 from typing import Optional, List, Dict, Any, Tuple
 
-import numpy as np
-import pandas as pd
 import httpx
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,7 +45,7 @@ TFIDF_MATRIX_PATH = os.path.join(BASE_DIR, "tfidf_matrix.pkl")
 TFIDF_PATH = os.path.join(BASE_DIR, "tfidf.pkl")
 CSV_PATH = os.path.join(BASE_DIR, "Data", "movies_metadata.csv")
 
-df: Optional[pd.DataFrame] = None
+df: Any = None
 indices_obj: Any = None
 tfidf_matrix: Any = None
 tfidf_obj: Any = None
@@ -206,7 +204,11 @@ async def tmdb_search_first(query: str) -> Optional[dict]:
 
 
 def _load_poster_mapping():
+    import pandas as pd
     global TITLE_TO_POSTER
+    if not os.path.exists(CSV_PATH):
+        print(f"WARN: {CSV_PATH} not found — no poster mapping")
+        return
     try:
         csv_df = pd.read_csv(CSV_PATH, low_memory=False, usecols=["title", "poster_path"])
         count = 0
@@ -293,6 +295,7 @@ def _search_local_df(query: str, limit: int = 20) -> List[dict]:
 
 
 def _get_local_category(category: str, limit: int = 24) -> List[TMDBMovieCard]:
+    import pandas as pd
     global df
     if df is None:
         return []
@@ -374,6 +377,7 @@ def get_local_idx_by_title(title: str) -> int:
 def tfidf_recommend_titles(
     query_title: str, top_n: int = 12
 ) -> List[Tuple[str, float]]:
+    import numpy as np
     global df, tfidf_matrix
     if df is None or tfidf_matrix is None:
         raise HTTPException(status_code=500, detail="TF-IDF resources not loaded")
@@ -444,28 +448,7 @@ async def attach_tmdb_card_by_title(title: str) -> Optional[TMDBMovieCard]:
 async def load_pickles():
     global df, indices_obj, tfidf_matrix, tfidf_obj, TITLE_TO_IDX, TMDB_AVAILABLE, FAKE_ID_TO_TITLE
 
-    with open(DF_PATH, "rb") as f:
-        df = pickle.load(f)
-
-    with open(INDICES_PATH, "rb") as f:
-        indices_obj = pickle.load(f)
-
-    with open(TFIDF_MATRIX_PATH, "rb") as f:
-        tfidf_matrix = pickle.load(f)
-
-    with open(TFIDF_PATH, "rb") as f:
-        tfidf_obj = pickle.load(f)
-
-    TITLE_TO_IDX = build_title_to_idx_map(indices_obj)
-
-    for title_key, idx in TITLE_TO_IDX.items():
-        FAKE_ID_TO_TITLE[FAKE_ID_OFFSET + idx] = title_key
-
-    if df is None or "title" not in df.columns:
-        raise RuntimeError("df.pkl must contain a DataFrame with a 'title' column")
-
-    _load_poster_mapping()
-
+    # Check TMDB connectivity first
     try:
         await tmdb_get("/trending/movie/day", {"language": "en-US"})
         TMDB_AVAILABLE = True
@@ -473,6 +456,52 @@ async def load_pickles():
     except Exception:
         TMDB_AVAILABLE = False
         print("TMDB: unreachable — running in local-only mode")
+
+    if TMDB_AVAILABLE:
+        # Skip local pickle loading — TMDB handles everything
+        df = None
+        indices_obj = None
+        tfidf_matrix = None
+        tfidf_obj = None
+        print("Skipping local data load (TMDB active)")
+        return
+
+    # --- local-only mode below (requires pandas, numpy, pickle files) ---
+    import pandas as pd
+    import numpy as np
+
+    try:
+        with open(DF_PATH, "rb") as f:
+            df = pickle.load(f)
+    except FileNotFoundError:
+        print(f"WARN: {DF_PATH} not found — some features disabled")
+
+    try:
+        with open(INDICES_PATH, "rb") as f:
+            indices_obj = pickle.load(f)
+    except FileNotFoundError:
+        print(f"WARN: {INDICES_PATH} not found")
+
+    try:
+        with open(TFIDF_MATRIX_PATH, "rb") as f:
+            tfidf_matrix = pickle.load(f)
+    except FileNotFoundError:
+        print(f"WARN: {TFIDF_MATRIX_PATH} not found")
+
+    try:
+        with open(TFIDF_PATH, "rb") as f:
+            tfidf_obj = pickle.load(f)
+    except FileNotFoundError:
+        print(f"WARN: {TFIDF_PATH} not found")
+
+    if indices_obj is not None:
+        TITLE_TO_IDX = build_title_to_idx_map(indices_obj)
+
+        for title_key, idx in TITLE_TO_IDX.items():
+            FAKE_ID_TO_TITLE[FAKE_ID_OFFSET + idx] = title_key
+
+    if df is not None:
+        _load_poster_mapping()
 
 
 # =========================
