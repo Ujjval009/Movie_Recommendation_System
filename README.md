@@ -29,16 +29,16 @@
 
 ## ✨ Features
 
-| Feature | Description |
-|---|---|
+| Feature                                 | Description                                                                          |
+| --------------------------------------- | ------------------------------------------------------------------------------------ |
 | **🧠 AI-Powered Recommendations** | TF-IDF vectorization + Cosine Similarity on movie overviews with genre overlap boost |
-| **🎭 Genre-Based Discovery** | Find movies in similar genres using TMDB's discovery API as fallback |
-| **🔍 Smart Search** | Real-time search with autocomplete suggestions and debounced TMDB queries |
-| **🏠 Curated Home Feed** | Trending, Top Rated, Now Playing, Popular, and Upcoming categories |
-| **🖼️ Rich Movie Details** | Posters, backdrops, ratings, release dates, genres, and full overviews |
-| **📱 Responsive UI** | Dark-themed React frontend optimized for desktop, tablet, and mobile |
-| **⚡ Dual Backend Mode** | Uses cloud TMDB API when available; falls back to local placeholder posters |
-| **🎨 SVG Placeholder Posters** | Auto-generated gradient posters for movies missing TMDB images |
+| **🎭 Genre-Based Discovery**      | Find movies in similar genres using TMDB's discovery API as fallback                 |
+| **🔍 Smart Search**               | Real-time search with autocomplete suggestions and debounced TMDB queries            |
+| **🏠 Curated Home Feed**          | Trending, Top Rated, Now Playing, Popular, and Upcoming categories                   |
+| **🖼️ Rich Movie Details**       | Posters, backdrops, ratings, release dates, genres, and full overviews               |
+| **📱 Responsive UI**              | Dark-themed React frontend optimized for desktop, tablet, and mobile                 |
+| **⚡ Dual Backend Mode**          | Uses cloud TMDB API when available; falls back to local placeholder posters          |
+| **🎨 SVG Placeholder Posters**    | Auto-generated gradient posters for movies missing TMDB images                       |
 
 ---
 
@@ -46,41 +46,41 @@
 
 ### Frontend
 
-| Technology | Purpose |
-|---|---|
-| **React 18** | UI framework with hooks and functional components |
-| **React Router 6** | Client-side routing (`/`, `/movie/:id`, `/search`) |
-| **Vite 5** | Fast dev server and optimized production builds |
-| **CSS Custom Properties** | Dark theme with CSS variables and responsive design |
+| Technology                      | Purpose                                                  |
+| ------------------------------- | -------------------------------------------------------- |
+| **React 18**              | UI framework with hooks and functional components        |
+| **React Router 6**        | Client-side routing (`/`, `/movie/:id`, `/search`) |
+| **Vite 5**                | Fast dev server and optimized production builds          |
+| **CSS Custom Properties** | Dark theme with CSS variables and responsive design      |
 
 ### Backend
 
-| Technology | Purpose |
-|---|---|
-| **Python 3.9+** | Core processing language |
-| **FastAPI** | High-performance async REST API with auto-generated docs |
-| **Uvicorn** | ASGI server for production deployment |
-| **scikit-learn** | TF-IDF vectorization and cosine similarity computation |
-| **Pandas / NumPy** | Data manipulation and numerical processing |
-| **httpx** | Async HTTP client for TMDB API calls |
-| **Pydantic** | Request/response validation with type hints |
+| Technology               | Purpose                                                  |
+| ------------------------ | -------------------------------------------------------- |
+| **Python 3.9+**    | Core processing language                                 |
+| **FastAPI**        | High-performance async REST API with auto-generated docs |
+| **Uvicorn**        | ASGI server for production deployment                    |
+| **scikit-learn**   | TF-IDF vectorization and cosine similarity computation   |
+| **Pandas / NumPy** | Data manipulation and numerical processing               |
+| **httpx**          | Async HTTP client for TMDB API calls                     |
+| **Pydantic**       | Request/response validation with type hints              |
 
 ### Machine Learning
 
-| Technique | Application |
-|---|---|
-| **TF-IDF Vectorization** | Converts movie overviews into numerical feature vectors |
-| **Cosine Similarity** | Measures pairwise similarity between movie vectors |
-| **NLP Preprocessing** | Text cleaning, stop word removal, and vocabulary building |
-| **Genre Overlap Boost** | Adds +0.15 similarity score per shared genre word |
+| Technique                      | Application                                               |
+| ------------------------------ | --------------------------------------------------------- |
+| **TF-IDF Vectorization** | Converts movie overviews into numerical feature vectors   |
+| **Cosine Similarity**    | Measures pairwise similarity between movie vectors        |
+| **NLP Preprocessing**    | Text cleaning, stop word removal, and vocabulary building |
+| **Genre Overlap Boost**  | Adds +0.15 similarity score per shared genre word         |
 
 ### Data
 
-| Source | Description |
-|---|---|
-| **TMDB API** | Real-time movie metadata, posters, backdrops, search, and discover |
-| **Movies Metadata (CSV)** | ~42K movie records from Kaggle for offline TF-IDF computation |
-| **Pickle Files** | Pre-computed TF-IDF matrix, indices, and DataFrame for fast startup |
+| Source                          | Description                                                         |
+| ------------------------------- | ------------------------------------------------------------------- |
+| **TMDB API**              | Real-time movie metadata, posters, backdrops, search, and discover  |
+| **Movies Metadata (CSV)** | ~42K movie records from Kaggle for offline TF-IDF computation       |
+| **Pickle Files**          | Pre-computed TF-IDF matrix, indices, and DataFrame for fast startup |
 
 ---
 
@@ -173,6 +173,7 @@ cd ..
 ### 4. Data Files
 
 The project expects these pickle files in the root directory:
+
 - `df.pkl` — DataFrame with movie data
 - `indices.pkl` — Title-to-index mapping
 - `tfidf_matrix.pkl` — Pre-computed TF-IDF matrix
@@ -187,12 +188,14 @@ These are generated by the Jupyter notebook (`movies.ipynb`).
 ### Run Locally (Full Stack)
 
 **Terminal 1 — Backend:**
+
 ```bash
 source venv/bin/activate
 uvicorn main:app --reload --port 8000
 ```
 
 **Terminal 2 — Frontend:**
+
 ```bash
 cd frontend
 VITE_API_URL=http://localhost:8000 npm run dev
@@ -230,26 +233,26 @@ The backend exposes the following REST endpoints. Full interactive docs at `/doc
 
 ### Movies
 
-| Endpoint | Method | Description | Parameters |
-|---|---|---|---|
-| `/home` | GET | Curated home feed by category | `category` (trending/top_rated/popular/now_playing/upcoming), `limit` |
-| `/movie/id/{tmdb_id}` | GET | Detailed movie information | `tmdb_id` (path) |
-| `/movie/search` | GET | Search + TF-IDF + Genre bundle | `query`, `tfidf_top_n`, `genre_limit` |
-| `/tmdb/search` | GET | TMDB search with autocomplete | `query`, `page` |
+| Endpoint                | Method | Description                    | Parameters                                                                |
+| ----------------------- | ------ | ------------------------------ | ------------------------------------------------------------------------- |
+| `/home`               | GET    | Curated home feed by category  | `category` (trending/top_rated/popular/now_playing/upcoming), `limit` |
+| `/movie/id/{tmdb_id}` | GET    | Detailed movie information     | `tmdb_id` (path)                                                        |
+| `/movie/search`       | GET    | Search + TF-IDF + Genre bundle | `query`, `tfidf_top_n`, `genre_limit`                               |
+| `/tmdb/search`        | GET    | TMDB search with autocomplete  | `query`, `page`                                                       |
 
 ### Recommendations
 
-| Endpoint | Method | Description | Parameters |
-|---|---|---|---|
-| `/recommend/tfidf` | GET | TF-IDF content-based recs | `title`, `top_n` |
-| `/recommend/genre` | GET | Genre-based discovery | `tmdb_id`, `limit` |
+| Endpoint             | Method | Description               | Parameters             |
+| -------------------- | ------ | ------------------------- | ---------------------- |
+| `/recommend/tfidf` | GET    | TF-IDF content-based recs | `title`, `top_n`   |
+| `/recommend/genre` | GET    | Genre-based discovery     | `tmdb_id`, `limit` |
 
 ### Utilities
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/health` | GET | Health check (returns TMDB connectivity status) |
-| `/poster/{title}` | GET | SVG placeholder poster for missing images |
+| Endpoint            | Method | Description                                     |
+| ------------------- | ------ | ----------------------------------------------- |
+| `/health`         | GET    | Health check (returns TMDB connectivity status) |
+| `/poster/{title}` | GET    | SVG placeholder poster for missing images       |
 
 ### Example Response
 
@@ -321,13 +324,15 @@ Movie_Recommendation_System/
 
 ## 📸 Screenshots
 
-> *Screenshots coming soon. Run the project locally to see the UI in action.*
+### Output Image
 
-| Page | Description |
-|---|---|
-| **Home** | Curated category carousels with movie posters |
+<img src="output/image.png" alt="Movie Recommendation System Demo" width="100%"/>
+
+| Page                   | Description                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------- |
+| **Home**         | Curated category carousels with movie posters                                     |
 | **Movie Detail** | Full movie info with backdrop, poster, overview, and dual recommendation sections |
-| **Search** | Real-time autocomplete with debounced TMDB queries |
+| **Search**       | Real-time autocomplete with debounced TMDB queries                                |
 
 ---
 
@@ -376,6 +381,7 @@ Movie_Recommendation_System/
 
 ---
 
+<<<<<<< HEAD
 
 
 
@@ -384,3 +390,10 @@ Movie_Recommendation_System/
 This project is licensed under the **MIT License** 
 
 
+=======
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+>>>>>>> d2642f3 ( FINAL README FILE)
