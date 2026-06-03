@@ -95,7 +95,7 @@
 │       │            │                 │               │
 │  ┌────▼────────────▼─────────────────▼──────────┐   │
 │  │            movieApi.js (Fetch API)            │   │
-│  │  API_BASE → https://movie-rec-466x.onrender.com │ │
+│  │  API_BASE → https://movie-recommendation-system-6erz.onrender.com │ │
 │  └────────────────────┬─────────────────────────┘   │
 └───────────────────────┼─────────────────────────────┘
                         │ HTTPS
@@ -208,7 +208,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ```bash
 cd frontend
 npm run dev
-# Uses https://movie-rec-466x.onrender.com by default
+# Uses https://movie-recommendation-system-6erz.onrender.com by default
 ```
 
 ### Production Build
