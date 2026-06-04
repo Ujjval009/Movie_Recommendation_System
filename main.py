@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
+from semantic.router import router as semantic_router
 
 # =========================
 # ENV
@@ -16,7 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
-TMDB_BASE = "https://api.themoviedb.org/3"
+TMDB_BASE = "https://api.tmdb.org/3"
 TMDB_IMG_500 = "https://image.tmdb.org/t/p/w500"
 
 
@@ -75,6 +76,7 @@ class TMDBMovieDetails(BaseModel):
     release_date: Optional[str] = None
     poster_url: Optional[str] = None
     backdrop_url: Optional[str] = None
+    vote_average: Optional[float] = None
     genres: List[dict] = []
 
 
@@ -104,7 +106,7 @@ def make_img_url(path: Optional[str]) -> Optional[str]:
     return f"{TMDB_IMG_500}{path}"
 
 
-def _get_poster_url(title: str) -> Optional[str]:
+def _get_poster_url(title: str, year: str = "", rating: str = "") -> Optional[str]:
     key = _norm_title(title)
     pp = TITLE_TO_POSTER.get(key)
     if pp:
@@ -113,7 +115,15 @@ def _get_poster_url(title: str) -> Optional[str]:
     if pp:
         return f"{TMDB_IMG_500}{pp}"
     safe = title.replace(" ", "%20")[:80]
-    return f"/poster/{safe}"
+    params = ""
+    if year or rating:
+        parts = []
+        if year:
+            parts.append(f"year={year}")
+        if rating:
+            parts.append(f"rating={rating}")
+        params = "?" + "&".join(parts)
+    return f"/poster/{safe}{params}"
 
 
 def _get_backdrop_url(title: str) -> Optional[str]:
@@ -181,6 +191,7 @@ async def tmdb_movie_details(movie_id: int) -> TMDBMovieDetails:
         release_date=data.get("release_date"),
         poster_url=make_img_url(data.get("poster_path")),
         backdrop_url=make_img_url(data.get("backdrop_path")),
+        vote_average=data.get("vote_average"),
         genres=data.get("genres", []) or [],
     )
 
@@ -288,7 +299,11 @@ def _search_local_df(query: str, limit: int = 20) -> List[dict]:
     q = query.strip().lower()
     if not q:
         return []
-    matches = df[df["title"].str.lower().str.contains(q, na=False)]
+    import re
+    q_norm = re.sub(r'[\s\-:;,._\'"!?]+', '', q)
+    titles = df["title"].str.lower()
+    titles_norm = titles.str.replace(r'[\s\-:;,._\'"!?]+', '', regex=True)
+    matches = df[titles.str.contains(q, na=False) | titles_norm.str.contains(q_norm, na=False)]
     matches = matches.head(limit).copy()
     matches["_idx"] = matches.index
     return matches.to_dict("records")
@@ -457,16 +472,8 @@ async def load_pickles():
         TMDB_AVAILABLE = False
         print("TMDB: unreachable — running in local-only mode")
 
-    if TMDB_AVAILABLE:
-        # Skip local pickle loading — TMDB handles everything
-        df = None
-        indices_obj = None
-        tfidf_matrix = None
-        tfidf_obj = None
-        print("Skipping local data load (TMDB active)")
-        return
-
-    # --- local-only mode below (requires pandas, numpy, pickle files) ---
+    # Always load local pickle data (TF-IDF, embeddings, etc.)
+    # TMDB is used for poster enrichment only — not as a data source replacement
     import pandas as pd
     import numpy as np
 
@@ -508,11 +515,14 @@ async def load_pickles():
 # ROUTES
 # =========================
 
+app.include_router(semantic_router)
+
 POSTER_SVG_CACHE: Dict[str, str] = {}
 
-def _build_poster_svg(title: str) -> str:
-    if title in POSTER_SVG_CACHE:
-        return POSTER_SVG_CACHE[title]
+def _build_poster_svg(title: str, year: str = "", rating: str = "") -> str:
+    cache_key = f"{title}|{year}|{rating}"
+    if cache_key in POSTER_SVG_CACHE:
+        return POSTER_SVG_CACHE[cache_key]
     safe_title = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
     initial = safe_title[0] if safe_title else "?"
     lines = []
@@ -528,24 +538,35 @@ def _build_poster_svg(title: str) -> str:
     if current:
         lines.append(current)
     wrapped = "\n".join(lines)
+    year_text = f"<text x='200' y='430' text-anchor='middle' font-family='system-ui,sans-serif' font-size='16' fill='#a78bfa' opacity='0.8'>{year}</text>" if year else ""
+    rating_text = f"<text x='200' y='460' text-anchor='middle' font-family='system-ui,sans-serif' font-size='14' fill='#fbbf24' opacity='0.8'>{rating}</text>" if rating else ""
     svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
-<defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-<stop offset="0%" style="stop-color:#1a1a2e"/><stop offset="100%" style="stop-color:#2d1b69"/>
-</linearGradient></defs>
+<defs>
+<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" style="stop-color:#0f0c29"/>
+<stop offset="50%" style="stop-color:#302b63"/>
+<stop offset="100%" style="stop-color:#24243e"/>
+</linearGradient>
+<radialGradient id="glow" cx="50%" cy="30%" r="50%">
+<stop offset="0%" style="stop-color:#7c3aed;stop-opacity:0.15"/>
+<stop offset="100%" style="stop-color:#7c3aed;stop-opacity:0"/>
+</radialGradient>
+</defs>
 <rect fill="url(#g)" width="400" height="600"/>
-<rect x="20" y="20" width="360" height="560" rx="12" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-opacity="0.3"/>
-<text x="200" y="220" text-anchor="middle" dominant-baseline="middle" font-family="Inter,Arial,sans-serif" font-size="100" font-weight="700" fill="#7c3aed" opacity="0.9">{initial}</text>
-<text x="200" y="350" text-anchor="middle" dominant-baseline="middle" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="600" fill="#c4b5fd" text-anchor="middle">{wrapped}</text>
-<circle cx="200" cy="490" r="24" fill="none" stroke="#7c3aed" stroke-width="2" opacity="0.4"/>
-<polygon points="192,480 192,500 208,490" fill="#7c3aed" opacity="0.4"/>
+<rect fill="url(#glow)" width="400" height="600"/>
+<rect x="20" y="20" width="360" height="560" rx="12" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-opacity="0.2"/>
+<text x="200" y="200" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,sans-serif" font-size="100" font-weight="800" fill="#7c3aed" opacity="0.9">{initial}</text>
+<circle cx="200" cy="200" r="70" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.15"/>
+<text x="200" y="340" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,sans-serif" font-size="20" font-weight="600" fill="#c4b5fd">{wrapped}</text>
+{year_text}{rating_text}
 </svg>'''
-    POSTER_SVG_CACHE[title] = svg
+    POSTER_SVG_CACHE[cache_key] = svg
     return svg
 
 
 @app.get("/poster/{title:path}")
-async def poster_placeholder(title: str):
-    svg = _build_poster_svg(title)
+async def poster_placeholder(title: str, year: str = "", rating: str = ""):
+    svg = _build_poster_svg(title, year, rating)
     return Response(content=svg, media_type="image/svg+xml")
 
 
@@ -773,11 +794,16 @@ def _find_local_details_by_title(query: str) -> Optional[TMDBMovieDetails]:
     global df, TITLE_TO_IDX
     if df is None:
         return None
+    import re
     q = _norm_title(query)
     if TITLE_TO_IDX and q in TITLE_TO_IDX:
         idx = TITLE_TO_IDX[q]
         return _df_row_to_details(idx)
-    matches = df[df["title"].str.lower().str.contains(q, na=False)]
+    # Normalize query for fuzzy matching
+    q_norm = re.sub(r'[\s\-:;,._\'"!?]+', '', q)
+    titles = df["title"].str.lower()
+    titles_norm = titles.str.replace(r'[\s\-:;,._\'"!?]+', '', regex=True)
+    matches = df[titles.str.contains(q, na=False) | titles_norm.str.contains(q_norm, na=False)]
     if not matches.empty:
         idx = matches.index[0]
         return _df_row_to_details(idx)
