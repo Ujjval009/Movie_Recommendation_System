@@ -524,6 +524,18 @@ async def load_pickles():
 
 app.include_router(semantic_router)
 
+
+@app.get("/")
+async def root():
+    return {
+        "app": "Movie Recommender API",
+        "version": "3.0",
+        "docs": "/docs",
+        "openapi": "/openapi.json",
+        "health": "/health",
+    }
+
+
 POSTER_SVG_CACHE: Dict[str, str] = {}
 
 def _build_poster_svg(title: str, year: str = "", rating: str = "") -> str:
