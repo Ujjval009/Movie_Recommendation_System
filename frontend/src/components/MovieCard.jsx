@@ -1,8 +1,17 @@
 import { Link } from 'react-router-dom';
 
-const PLACEHOLDER = 'data:image/svg+xml,' + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="750" viewBox="0 0 500 750"><rect fill="#1a1a2e" width="500" height="750"/><text x="250" y="375" text-anchor="middle" dominant-baseline="middle" fill="#6b6b80" font-family="sans-serif" font-size="20">No Poster</text></svg>'
+const ULTIMATE_PLACEHOLDER = 'data:image/svg+xml,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="750" viewBox="0 0 500 750"><rect fill="#1a1a2e" width="500" height="750"/><text x="250" y="375" text-anchor="middle" dominant-baseline="middle" fill="#4a4a5a" font-family="sans-serif" font-size="18">No Poster</text></svg>'
 );
+
+function buildFallbackUrl(title, year, rating) {
+  let url = `/poster/${encodeURIComponent((title || '').replace(/&/g, '%26'))}`;
+  const params = [];
+  if (year) params.push(`year=${year}`);
+  if (rating) params.push(`rating=${rating}`);
+  if (params.length) url += '?' + params.join('&');
+  return url;
+}
 
 export default function MovieCard({ movie, index = 0 }) {
   const raw = movie.poster_url || movie.poster_path || null;
@@ -13,6 +22,7 @@ export default function MovieCard({ movie, index = 0 }) {
   const year = (movie.release_date || '').slice(0, 4);
   const rating = movie.vote_average;
   const id = movie.tmdb_id || movie.id;
+  const fallbackUrl = buildFallbackUrl(title, year, rating);
 
   return (
     <Link
@@ -22,11 +32,18 @@ export default function MovieCard({ movie, index = 0 }) {
     >
       <div className="movie-card-poster-wrapper">
         <img
-          src={posterUrl || PLACEHOLDER}
+          src={posterUrl || fallbackUrl}
           alt={`${title} poster`}
           className="movie-card-poster"
           loading="lazy"
-          onError={(e) => { e.target.src = PLACEHOLDER; }}
+          onError={(e) => {
+            const current = e.target.src;
+            if (current !== fallbackUrl) {
+              e.target.src = fallbackUrl;
+            } else if (current !== ULTIMATE_PLACEHOLDER) {
+              e.target.src = ULTIMATE_PLACEHOLDER;
+            }
+          }}
         />
         <div className="movie-card-overlay">
           <span className="movie-card-view">View Details</span>
