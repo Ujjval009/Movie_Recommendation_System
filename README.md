@@ -147,7 +147,7 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/Movie_Recommendation_System.git
+git clone https://github.com/Ujjval009/Movie_Recommendation_System.git
 cd Movie_Recommendation_System
 ```
 
