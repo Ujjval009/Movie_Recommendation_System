@@ -517,6 +517,17 @@ async def load_pickles():
     if df is not None:
         _load_poster_mapping()
 
+    # Pre-load semantic recommender during startup so the model downloads
+    # during startup (Render's startup timeout is ~60s) rather than during
+    # the first user request (Render's request timeout is ~5-10s).
+    if _semantic_ok:
+        try:
+            from semantic.router import init_recommender
+            init_recommender()
+            print("SemanticRecommender: model loaded")
+        except Exception as e:
+            print(f"WARN: SemanticRecommender failed to load: {e}")
+
 
 # =========================
 # ROUTES

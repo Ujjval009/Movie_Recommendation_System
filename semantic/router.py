@@ -18,6 +18,18 @@ router = APIRouter(tags=["semantic"])
 _recommender = None
 
 
+def init_recommender():
+    """Pre-warm the recommender singleton during app startup."""
+    global _recommender
+    if _recommender is None:
+        logger.info("Initializing SemanticRecommender...")
+        try:
+            _recommender = SemanticRecommender(DATA_DIR)
+        except Exception as e:
+            logger.error(f"Failed to initialize SemanticRecommender: {e}")
+            raise
+
+
 def _get_recommender() -> SemanticRecommender:
     global _recommender
     if _recommender is None:
