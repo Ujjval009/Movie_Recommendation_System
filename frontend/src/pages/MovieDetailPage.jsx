@@ -3,6 +3,15 @@ import { useParams, Link } from 'react-router-dom';
 import { getMovieDetails, getMovieBundle, getGenreRecommendations, getTFIDFRecommendations, resolveTFIDFTitles } from '../api/movieApi';
 import MovieGrid from '../components/MovieGrid';
 
+function buildFallbackUrl(title, year, rating) {
+  let url = `/poster/${encodeURIComponent((title || '').replace(/&/g, '%26'))}`;
+  const params = [];
+  if (year) params.push(`year=${year}`);
+  if (rating) params.push(`rating=${rating}`);
+  if (params.length) url += '?' + params.join('&');
+  return url;
+}
+
 function posterSrc(url) {
   if (!url) return null;
   if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('/poster/')) return url;
@@ -20,6 +29,7 @@ export default function MovieDetailPage() {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [backdropFailed, setBackdropFailed] = useState(false);
 
   const [tfidfMovies, setTfidfMovies] = useState([]);
   const [genreMovies, setGenreMovies] = useState([]);
@@ -33,6 +43,7 @@ export default function MovieDetailPage() {
     async function load() {
       setLoading(true);
       setError(null);
+      setBackdropFailed(false);
       setTfidfMovies([]);
       setGenreMovies([]);
       setRecsLoading(true);
@@ -79,8 +90,8 @@ export default function MovieDetailPage() {
           if (!cancelled) {
             setGenreMovies(Array.isArray(fallback) ? fallback : []);
           }
-        } catch {
-          /* genre fallback also failed */
+        } catch (genreErr) {
+          console.error('Genre fallback also failed:', genreErr);
         }
 
         try {
@@ -223,25 +234,31 @@ export default function MovieDetailPage() {
   const posterUrl = posterSrc(movie.poster_url || movie.poster_path);
   const year = (movie.release_date || '').slice(0, 4);
   const genres = movie.genres || [];
+  const posterFallback = buildFallbackUrl(movie.title, year, movie.vote_average);
+  const showBackdrop = backdropUrl && !backdropFailed;
 
   return (
     <div className="detail-page">
-      {backdropUrl && (
-        <div className="detail-backdrop">
-          <img src={backdropUrl} alt="" />
-          <div className="backdrop-overlay" />
-        </div>
-      )}
+      <div className={`detail-backdrop ${!showBackdrop ? 'backdrop-fallback' : ''}`}>
+        {showBackdrop ? (
+          <img src={backdropUrl} alt="" onError={() => setBackdropFailed(true)} />
+        ) : (
+          <div className="backdrop-gradient" />
+        )}
+        <div className="backdrop-overlay" />
+      </div>
 
       <div className="container detail-content">
         <div className="detail-main">
           <div className="detail-poster-col">
             <img
               className="detail-poster"
-              src={posterUrl || ''}
+              src={posterUrl || posterFallback}
               alt={`${movie.title} poster`}
               onError={(e) => {
-                e.target.style.display = 'none';
+                if (e.target.src !== posterFallback) {
+                  e.target.src = posterFallback;
+                }
               }}
             />
           </div>
@@ -303,6 +320,16 @@ export default function MovieDetailPage() {
           width: 100%;
           height: 100%;
           object-fit: cover;
+        }
+
+        .detail-backdrop.backdrop-fallback {
+          background: var(--bg-primary);
+        }
+
+        .backdrop-gradient {
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 50%, #1a1a2e 100%);
         }
 
         .backdrop-overlay {
