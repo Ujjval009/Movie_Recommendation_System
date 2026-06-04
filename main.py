@@ -9,7 +9,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from semantic.router import router as semantic_router
+try:
+    from semantic.router import router as semantic_router
+    _semantic_ok = True
+except Exception as e:
+    print(f"WARN: semantic router unavailable: {e}")
+    from fastapi import APIRouter
+    semantic_router = APIRouter()
+    _semantic_ok = False
 
 # =========================
 # ENV

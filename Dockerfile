@@ -5,13 +5,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download SentenceTransformer model (cached in Docker layer)
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
-
 COPY . .
 
-# Generate embeddings + FAISS index
-RUN python semantic/train.py
+# Embeddings + FAISS index generated lazily on first request (cold start)
+# This avoids Docker build timeouts on Render's free tier
 
 EXPOSE 10000
 
