@@ -137,6 +137,7 @@ export default function Navbar() {
         </form>
 
         <Link to="/" className="nav-link">Home</Link>
+        <Link to="/recommend" className="nav-link">Story/Mood</Link>
       </div>
 
       <style>{`
