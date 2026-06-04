@@ -3,15 +3,15 @@
   <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React"/>
   <img src="https://img.shields.io/badge/FastAPI-0.111-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"/>
-  <img src="https://img.shields.io/badge/Streamlit-1.36-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit"/>
   <img src="https://img.shields.io/badge/scikit--learn-1.5-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="scikit-learn"/>
+  <img src="https://img.shields.io/badge/sentence--transformers-2.7-FF6F00?style=for-the-badge&logo=huggingface&logoColor=white" alt="sentence-transformers"/>
   <br/><br/>
   <h1>🎬 Movie Recommendation System</h1>
   <p>
-    <strong>Content-Based Filtering · TF-IDF · Cosine Similarity · TMDB API</strong>
+    <strong>Semantic Search · TF-IDF · FAISS · Sentence Transformers · TMDB API</strong>
   </p>
   <p>
-    A full-stack movie discovery platform that recommends films based on plot similarity, genre overlap, and real-time TMDB data.
+    A full-stack movie discovery platform that recommends films based on plot similarity, semantic understanding, genre overlap, and real-time TMDB data.
   </p>
   <br/>
   <p>
@@ -29,16 +29,16 @@
 
 ## ✨ Features
 
-| Feature                                 | Description                                                                          |
-| --------------------------------------- | ------------------------------------------------------------------------------------ |
-| **🧠 AI-Powered Recommendations** | TF-IDF vectorization + Cosine Similarity on movie overviews with genre overlap boost |
-| **🎭 Genre-Based Discovery**      | Find movies in similar genres using TMDB's discovery API as fallback                 |
-| **🔍 Smart Search**               | Real-time search with autocomplete suggestions and debounced TMDB queries            |
-| **🏠 Curated Home Feed**          | Trending, Top Rated, Now Playing, Popular, and Upcoming categories                   |
-| **🖼️ Rich Movie Details**       | Posters, backdrops, ratings, release dates, genres, and full overviews               |
-| **📱 Responsive UI**              | Dark-themed React frontend optimized for desktop, tablet, and mobile                 |
-| **⚡ Dual Backend Mode**          | Uses cloud TMDB API when available; falls back to local placeholder posters          |
-| **🎨 SVG Placeholder Posters**    | Auto-generated gradient posters for movies missing TMDB images                       |
+| Feature                                 | Description                                                                              |
+| --------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **🧠 Semantic Search**            | Describe a story or mood — finds movies with matching themes using NLP embeddings        |
+| **🔢 TF-IDF Recommendations**     | TF-IDF vectorization + Cosine Similarity on movie overviews with genre overlap boost    |
+| **🎭 Genre-Based Discovery**      | Find movies in similar genres using TMDB's discovery API                                 |
+| **🔍 Smart Search**               | Real-time search with autocomplete suggestions and debounced TMDB queries                |
+| **🏠 Curated Home Feed**          | Trending, Top Rated, Now Playing, Popular, and Upcoming categories                       |
+| **🖼️ Rich Movie Details**       | Posters, backdrops, ratings, release dates, genres, and overviews from live TMDB API     |
+| **📱 Responsive UI**              | Dark-themed React frontend optimized for desktop, tablet, and mobile                     |
+| **⚡ Live TMDB Enrichment**       | Every poster, backdrop, and rating fetched fresh from TMDB via CloudFront                |
 
 ---
 
@@ -49,7 +49,7 @@
 | Technology                      | Purpose                                                  |
 | ------------------------------- | -------------------------------------------------------- |
 | **React 18**              | UI framework with hooks and functional components        |
-| **React Router 6**        | Client-side routing (`/`, `/movie/:id`, `/search`) |
+| **React Router 6**        | Client-side routing (`/`, `/movie/:id`, `/search`, `/recommend`) |
 | **Vite 5**                | Fast dev server and optimized production builds          |
 | **CSS Custom Properties** | Dark theme with CSS variables and responsive design      |
 
@@ -61,72 +61,77 @@
 | **FastAPI**        | High-performance async REST API with auto-generated docs |
 | **Uvicorn**        | ASGI server for production deployment                    |
 | **scikit-learn**   | TF-IDF vectorization and cosine similarity computation   |
+| **sentence-transformers** | Semantic text embeddings using `all-MiniLM-L6-v2`  |
+| **FAISS**          | Facebook AI Similarity Search — fast approximate nearest neighbor |
 | **Pandas / NumPy** | Data manipulation and numerical processing               |
 | **httpx**          | Async HTTP client for TMDB API calls                     |
 | **Pydantic**       | Request/response validation with type hints              |
 
 ### Machine Learning
 
-| Technique                      | Application                                               |
-| ------------------------------ | --------------------------------------------------------- |
-| **TF-IDF Vectorization** | Converts movie overviews into numerical feature vectors   |
-| **Cosine Similarity**    | Measures pairwise similarity between movie vectors        |
-| **NLP Preprocessing**    | Text cleaning, stop word removal, and vocabulary building |
-| **Genre Overlap Boost**  | Adds +0.15 similarity score per shared genre word         |
+| Technique                             | Application                                                     |
+| ------------------------------------- | --------------------------------------------------------------- |
+| **Sentence Transformers**       | `all-MiniLM-L6-v2` model — encodes text into 384-dim embeddings |
+| **FAISS**                      | Fast approximate nearest neighbor search over 45K movie vectors |
+| **TF-IDF Vectorization**       | Converts movie overviews into numerical feature vectors         |
+| **Cosine Similarity**          | Measures pairwise similarity between movie vectors              |
+| **NLP Preprocessing**          | Text cleaning, stop word removal, and vocabulary building       |
+| **Genre Overlap Boost**        | Adds +0.15 similarity score per shared genre word               |
 
 ### Data
 
 | Source                          | Description                                                         |
 | ------------------------------- | ------------------------------------------------------------------- |
-| **TMDB API**              | Real-time movie metadata, posters, backdrops, search, and discover  |
-| **Movies Metadata (CSV)** | ~42K movie records from Kaggle for offline TF-IDF computation       |
-| **Pickle Files**          | Pre-computed TF-IDF matrix, indices, and DataFrame for fast startup |
+| **TMDB API (CloudFront)** | Real-time movie metadata, posters, backdrops, search, and discover  |
+| **TMDB Image CDN**        | `image.tmdb.org` — serves poster and backdrop images                |
+| **Movies Metadata (CSV)** | ~45K movie records from Kaggle for offline TF-IDF computation       |
+| **Pickle Files**          | Pre-computed TF-IDF matrix, FAISS index, and embeddings for fast startup |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Browser (React)                    │
-│  ┌──────────┐ ┌──────────┐ ┌────────────────────┐   │
-│  │ HomePage │ │ MovieDetail│ │ SearchResultsPage │   │
-│  └────┬─────┘ └────┬─────┘ └─────────┬──────────┘   │
-│       │            │                 │               │
-│  ┌────▼────────────▼─────────────────▼──────────┐   │
-│  │            movieApi.js (Fetch API)            │   │
-│  │  API_BASE → https://movie-recommendation-system-6erz.onrender.com │ │
-│  └────────────────────┬─────────────────────────┘   │
-└───────────────────────┼─────────────────────────────┘
-                        │ HTTPS
-┌───────────────────────▼─────────────────────────────┐
-│              FastAPI Backend (Render)                │
-│  ┌──────────────────────────────────────────────┐   │
-│  │              REST API Endpoints              │   │
-│  │  /home  /movie/id  /movie/search  /tmdb/search│   │
-│  │  /recommend/genre  /recommend/tfidf  /health │   │
-│  └────────────────────┬─────────────────────────┘   │
-│                       │                              │
-│  ┌────────────────────┼─────────────────────────┐   │
-│  │         ┌──────────▼──────────┐               │   │
-│  │         │   TMDB API          │  🌐 External  │   │
-│  │         │  (api.themoviedb.org)│               │   │
-│  │         └─────────────────────┘               │   │
-│  │         ┌─────────────────────┐               │   │
-│  │         │  Pickle Files       │  💾 Local     │   │
-│  │         │  df.pkl, tfidf.pkl  │               │   │
-│  │         │  indices.pkl, etc   │               │   │
-│  │         └─────────────────────┘               │   │
-│  └───────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
+  Browser (React)
+  +----------+ +----------+ +-------------------+ +-----------+
+  | HomePage | |MovieDetail| | SearchResultsPage| |SemanticPage|
+  +----+-----+ +----+-----+ +---------+---------+ +-----+-----+
+       |           |                   |                 |
+  +----v-----------v-------------------v-----------------v------+
+  |              movieApi.js (Fetch API)                        |
+  |  API_BASE -> https://movie-recommendation-system-6erz.onrender.com |
+  +----------------------------+-------------------------------+
+                               | HTTPS
+  +----------------------------v-------------------------------+
+  |              FastAPI Backend (Render)                       |
+  |  +------------------------------------------------------+  |
+  |  |  REST API Endpoints                                  |  |
+  |  |  /home  /movie/id  /movie/search  /tmdb/search      |  |
+  |  |  /recommend/story  /recommend/movie                  |  |
+  |  |  /recommend/genre  /recommend/tfidf  /health        |  |
+  |  +-----------+--------------------+--------------------+  |
+  |              |                    |                        |
+  |  +-----------v------+  +--------v--------------------+   |
+  |  |   TMDB API       |  |  Semantic Module            |   |
+  |  |  (api.tmdb.org)  |  |  SentenceTransformers       |   |
+  |  |  via CloudFront  |  |  + FAISS index              |   |
+  |  +------------------+  +--------+--------------------+   |
+  |                                |                          |
+  |  +-----------------------------v----------------------+   |
+  |  |        Pickle Files (Local Fallback)                |   |
+  |  |  df.pkl, tfidf.pkl, indices.pkl, embeddings.npy    |   |
+  |  +----------------------------------------------------+   |
+  +-----------------------------------------------------------+
 ```
 
 ### Data Flow
 
 1. **Frontend** sends HTTP requests to the FastAPI backend via `movieApi.js`
-2. **Backend** either queries the **TMDB API** (real-time data) or uses **local pickle files** (TF-IDF computation)
-3. **Recommendations** combine TF-IDF cosine similarity scores with a genre overlap boost
-4. **Posters & backdrops** are served from TMDB's CDN (`image.tmdb.org`) or generated as SVG placeholders
+2. **TMDB routes** (`/home`, `/movie/id`, `/tmdb/search`) query the live TMDB API for fresh data
+3. **TF-IDF routes** (`/recommend/tfidf`) use local pickle files for content-based similarity
+4. **Semantic route** (`/recommend/story`) encodes the user's story/mood with Sentence Transformers, then searches the FAISS index for nearest neighbors
+5. **All results** are enriched with live TMDB metadata (posters, backdrops, ratings, release dates)
+6. **Images** are served from TMDB's CDN (`image.tmdb.org`)
 
 ---
 
@@ -156,7 +161,6 @@ source venv/bin/activate   # Linux/Mac
 
 # Install dependencies
 pip install -r requirements.txt
-pip install fastapi uvicorn httpx python-dotenv
 
 # Create .env file with your TMDB API key
 echo "TMDB_API_KEY=your_api_key_here" > .env
@@ -180,6 +184,16 @@ The project expects these pickle files in the root directory:
 - `tfidf.pkl` — Fitted TF-IDF vectorizer
 
 These are generated by the Jupyter notebook (`movies.ipynb`).
+
+### 5. Semantic Embeddings
+
+```bash
+# Pre-download the SentenceTransformer model
+python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+
+# Generate FAISS index and embeddings
+python semantic/train.py
+```
 
 ---
 
@@ -219,10 +233,11 @@ npm run build
 npm run preview
 ```
 
-### Streamlit UI (Alternative)
+### Docker
 
 ```bash
-streamlit run app.py
+docker build -t movie-recommender .
+docker run -p 10000:10000 movie-recommender
 ```
 
 ---
@@ -242,10 +257,13 @@ The backend exposes the following REST endpoints. Full interactive docs at `/doc
 
 ### Recommendations
 
-| Endpoint             | Method | Description               | Parameters             |
-| -------------------- | ------ | ------------------------- | ---------------------- |
-| `/recommend/tfidf` | GET    | TF-IDF content-based recs | `title`, `top_n`   |
-| `/recommend/genre` | GET    | Genre-based discovery     | `tmdb_id`, `limit` |
+| Endpoint               | Method | Description                         | Parameters                     |
+| ---------------------- | ------ | ----------------------------------- | ------------------------------ |
+| `/recommend/story`   | POST   | Semantic search by story/mood       | `story`, `top_n`          |
+| `/recommend/movie`   | POST   | Semantic search by movie title      | `title`, `top_n`          |
+| `/recommend/tfidf`   | GET    | TF-IDF content-based recs           | `title`, `top_n`          |
+| `/recommend/genre`   | GET    | Genre-based discovery               | `tmdb_id`, `limit`         |
+| `/recommend/semantic/health` | GET | Semantic module health check    | —                              |
 
 ### Utilities
 
@@ -254,7 +272,35 @@ The backend exposes the following REST endpoints. Full interactive docs at `/doc
 | `/health`         | GET    | Health check (returns TMDB connectivity status) |
 | `/poster/{title}` | GET    | SVG placeholder poster for missing images       |
 
-### Example Response
+### Example: Semantic Search
+
+```json
+POST /recommend/story
+
+Request:
+{
+  "story": "A family goes on a road trip and discovers hidden treasure",
+  "top_n": 5
+}
+
+Response:
+{
+  "query": "A family goes on a road trip and discovers hidden treasure",
+  "recommendations": [
+    {
+      "title": "The Goonies",
+      "poster_url": "https://image.tmdb.org/t/p/w500/...",
+      "backdrop_url": "https://image.tmdb.org/t/p/w500/...",
+      "release_date": "1985-06-07",
+      "vote_average": 7.4,
+      "overview": "A group of kids discover a treasure map...",
+      "tmdb_id": 9340
+    }
+  ]
+}
+```
+
+### Example: Movie Details
 
 ```json
 GET /movie/id/603
@@ -266,6 +312,7 @@ GET /movie/id/603
   "release_date": "1999-03-31",
   "poster_url": "https://image.tmdb.org/t/p/w500/aOIuZAjPaRIE6CMzbazvcHuHXDc.jpg",
   "backdrop_url": "https://image.tmdb.org/t/p/w500/tlm8UkiQsitc8rSuIAscQDCnP8d.jpg",
+  "vote_average": 8.2,
   "genres": [
     { "id": 28, "name": "Action" },
     { "id": 878, "name": "Science Fiction" }
@@ -294,27 +341,42 @@ Movie_Recommendation_System/
 │   │   ├── pages/
 │   │   │   ├── HomePage.jsx      # Categories + movie grid
 │   │   │   ├── MovieDetailPage.jsx # Details + recs
-│   │   │   └── SearchResultsPage.jsx # Search results
+│   │   │   ├── SearchResultsPage.jsx # Search results
+│   │   │   └── SemanticPage.jsx  # Story/mood search UI
 │   │   ├── styles/
 │   │   │   └── global.css        # Dark theme CSS
 │   │   ├── App.jsx               # Router + layout
 │   │   └── main.jsx              # Entry point
 │   ├── index.html
 │   ├── vite.config.js            # Vite config + proxy
+│   ├── vercel.json               # SPA rewrite for Vercel
 │   └── package.json
 │
-├── main.py                       # FastAPI backend (778 lines)
-├── app.py                        # Streamlit UI (optional)
+├── semantic/                     # Semantic search module
+│   ├── __init__.py
+│   ├── train.py                  # Embedding + FAISS index generation
+│   ├── inference.py              # Query encoding + nearest neighbor search
+│   ├── models.py                 # Pydantic request/response models
+│   ├── router.py                 # FastAPI router for semantic endpoints
+│   ├── utils.py                  # TMDB enrichment for semantic results
+│   └── data/                     # Generated embeddings (gitignored)
+│       ├── embeddings.npy
+│       ├── faiss.index
+│       ├── movies_meta.pkl
+│       └── title_to_id.pkl
+│
+├── main.py                       # FastAPI backend (FastAPI app + routes)
 ├── movies.ipynb                  # EDA + model training notebook
 │
 ├── df.pkl                        # Processed movie DataFrame
-├── indices.pkl                   # Title→index mapping
+├── indices.pkl                   # Title-to-index mapping
 ├── tfidf_matrix.pkl              # TF-IDF sparse matrix
 ├── tfidf.pkl                     # Fitted vectorizer
 │
 ├── Data/
-│   └── movies_metadata.csv       # Kaggle movie dataset
+│   └── movies_metadata.csv       # Kaggle movie dataset (~45K movies)
 │
+├── Dockerfile                    # Production container build
 ├── requirements.txt              # Python dependencies
 ├── .env                          # TMDB API key (create this)
 └── README.md
@@ -333,36 +395,49 @@ Movie_Recommendation_System/
 | **Home**         | Curated category carousels with movie posters                                     |
 | **Movie Detail** | Full movie info with backdrop, poster, overview, and dual recommendation sections |
 | **Search**       | Real-time autocomplete with debounced TMDB queries                                |
+| **Story/Mood**   | Describe a plot or theme — get semantically similar movie recommendations         |
 
 ---
 
 ## 🧪 How Recommendations Work
 
+### Semantic Search (Story/Mood)
+
+```
+  User Story
+      |
+      v
+  SentenceTransformer (all-MiniLM-L6-v2)
+      |
+      v
+  384-dim embedding
+      |
+      v
+  FAISS nearest-neighbor search
+      |
+      v
+  Top-K results
+      |
+      v
+  TMDB enrichment (posters, ratings, etc.)
+```
+
+1. **Text Encoding**: User's story/mood is encoded into a 384-dimensional vector
+2. **FAISS Search**: The vector is compared against 45K pre-computed movie embeddings
+3. **Result Ranking**: Nearest neighbors are ranked by cosine similarity
+4. **TMDB Enrichment**: Each result is enriched with live poster, backdrop, rating, and metadata
+
 ### Content-Based Filtering with TF-IDF
 
 ```
-┌──────────┐    ┌──────────────────┐    ┌──────────────┐
-│  Movie   │───→│  TF-IDF Vector   │───→│  Cosine      │
-│ Overview │    │  (scikit-learn)  │    │  Similarity  │
-└──────────┘    └──────────────────┘    └──────┬───────┘
-                                               │
-                                     ┌─────────▼─────────┐
-                                     │  Score × Genre     │
-                                     │  Boost (+0.15 per  │
-                                     │  shared genre)     │
-                                     └─────────┬─────────┘
-                                               │
-                                     ┌─────────▼─────────┐
-                                     │  Ranked Results    │
-                                     │  + TMDB Metadata   │
-                                     └───────────────────┘
+  Movie Overview -> TF-IDF Vector -> Cosine Similarity -> Score x Genre Boost -> Ranked Results + TMDB Metadata
 ```
 
 1. **Text Preprocessing**: Movie overviews are cleaned and tokenized
 2. **TF-IDF Vectorization**: Each overview becomes a sparse numerical vector
 3. **Cosine Similarity**: Pairwise similarity scores are computed between all movies
 4. **Genre Boost**: +0.15 is added to the score for each overlapping genre keyword
-5. **TMDB Enrichment**: Top results are merged with TMDB metadata (posters, ratings, etc.)
+5. **TMDB Enrichment**: Top results are merged with TMDB metadata
 
 ---
 
@@ -370,7 +445,7 @@ Movie_Recommendation_System/
 
 - [ ] **User Authentication** — Save favorites, watchlist, and rating history
 - [ ] **Collaborative Filtering** — Matrix factorization using user rating patterns
-- [ ] **Hybrid Recommender** — Combine content-based + collaborative approaches
+- [ ] **Hybrid Recommender** — Combine semantic + content-based + collaborative approaches
 - [ ] **Personalized Feed** — ML-driven ranking based on user behavior
 - [ ] **Infinite Scroll** — Lazy-loaded movie grids with pagination
 - [ ] **Dark/Light Toggle** — Theme switcher with persisted preference
@@ -381,19 +456,6 @@ Movie_Recommendation_System/
 
 ---
 
-<<<<<<< HEAD
-
-
-
-## 📄 License
-
-This project is licensed under the **MIT License** 
-
-
-=======
----
-
 ## 📄 License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
->>>>>>> d2642f3 ( FINAL README FILE)
