@@ -17,9 +17,9 @@ python-dotenv==1.0.1
 streamlit==1.36.0
 
 # =========================
-# Semantic Recommendation
+# Semantic Recommendation (ONNX-based, ~80MB instead of PyTorch's ~400MB)
 # =========================
-sentence-transformers>=3.0.0
+fastembed>=0.5.0
 faiss-cpu>=1.8.0
 scikit-learn==1.5.1
 numpy>=1.24.0

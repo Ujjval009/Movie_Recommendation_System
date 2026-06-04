@@ -43,10 +43,10 @@ class SemanticRecommender:
             )
             logger.info("Semantic data generated successfully")
 
-        logger.info("Loading SentenceTransformer model...")
-        from sentence_transformers import SentenceTransformer
+        logger.info("Loading embedding model (all-MiniLM-L6-v2 via fastembed)...")
+        from fastembed import TextEmbedding
 
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
         logger.info("Model loaded")
 
         logger.info("Loading FAISS index...")
@@ -66,8 +66,8 @@ class SemanticRecommender:
         logger.info("SemanticRecommender ready")
 
     def recommend_by_text(self, text: str, top_n: int = 12) -> list:
-        emb = self.model.encode([text], normalize_embeddings=True)
-        distances, indices = self.index.search(emb.astype(np.float32), top_n)
+        emb = np.array(list(self.model.embed([text]))).astype(np.float32)
+        distances, indices = self.index.search(emb, top_n)
         return [self._build_result(int(i), float(d)) for i, d in zip(indices[0], distances[0]) if int(i) >= 0]
 
     def recommend_by_movie(self, title: str, top_n: int = 12) -> list:

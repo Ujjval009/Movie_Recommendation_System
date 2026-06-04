@@ -52,18 +52,12 @@ def main():
     print(f"Sample text: {texts[0][:200]}...")
 
     # Generate embeddings
-    print("Loading SentenceTransformer model (all-MiniLM-L6-v2)...")
-    from sentence_transformers import SentenceTransformer
+    print("Loading embedding model (all-MiniLM-L6-v2 via fastembed)...")
+    from fastembed import TextEmbedding
 
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
     print("Generating embeddings (this may take a few minutes)...")
-    embeddings = model.encode(
-        texts,
-        show_progress_bar=True,
-        batch_size=64,
-        normalize_embeddings=True,
-    )
-    embeddings = np.array(embeddings).astype(np.float32)
+    embeddings = np.array(list(model.embed(texts, batch_size=64))).astype(np.float32)
     print(f"Embedding shape: {embeddings.shape}")
 
     # Build FAISS index
