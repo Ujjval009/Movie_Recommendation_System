@@ -30,26 +30,27 @@ class SemanticRecommender:
         title_id_path = os.path.join(self.data_dir, "title_to_id.pkl")
         emb_path = os.path.join(self.data_dir, "embeddings.npy")
 
-        logger.info("Loading embedding model (all-MiniLM-L6-v2 via fastembed)...")
-        from fastembed import TextEmbedding
-
-        self.model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
-        logger.info("Model loaded")
-
-        logger.info("Loading FAISS index...")
-        import faiss
-
-        self.index = faiss.read_index(index_path)
-        logger.info(f"FAISS index loaded: {self.index.ntotal} vectors")
-
+        # Load metadata first (fast, small files)
         logger.info("Loading metadata...")
         with open(meta_path, "rb") as f:
             self.meta = pickle.load(f)
-
         with open(title_id_path, "rb") as f:
             self.title_to_id = pickle.load(f)
-
         self.embeddings = np.load(emb_path)
+        logger.info(f"Metadata loaded: {len(self.meta)} movies")
+
+        # Memory-map the FAISS index to stay within 512MB
+        logger.info("Loading FAISS index (memory-mapped)...")
+        import faiss
+        self.index = faiss.read_index(index_path, faiss.IO_FLAG_MMAP)
+        logger.info(f"FAISS index loaded: {self.index.ntotal} vectors")
+
+        # Load embedding model last (largest memory spike)
+        logger.info("Loading embedding model (all-MiniLM-L6-v2 via fastembed)...")
+        from fastembed import TextEmbedding
+        self.model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
+        logger.info("Model loaded")
+
         logger.info("SemanticRecommender ready")
 
     def recommend_by_text(self, text: str, top_n: int = 12) -> list:
