@@ -59,6 +59,32 @@ export async function resolveTFIDFTitles(items) {
   return cards.filter(Boolean);
 }
 
+export async function getStoryRecommendations(story, topN = 12) {
+  const res = await fetch(`${API_BASE}/recommend/story`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ story, top_n: topN }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => 'Unknown error');
+    throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+  }
+  return res.json();
+}
+
+export async function getMovieRecommendations(title, topN = 12) {
+  const res = await fetch(`${API_BASE}/recommend/movie`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, top_n: topN }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => 'Unknown error');
+    throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+  }
+  return res.json();
+}
+
 export async function getHealth() {
   return fetchJSON(`${API_BASE}/health`);
 }
