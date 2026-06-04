@@ -7,8 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Embeddings + FAISS index generated lazily on first request (cold start)
-# This avoids Docker build timeouts on Render's free tier
+# No ML model needed — TF-IDF recommender uses scikit-learn only
 
 EXPOSE 10000
 
