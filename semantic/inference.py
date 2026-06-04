@@ -1,85 +1,80 @@
 """
-SemanticRecommender — loads SentenceTransformer model + FAISS index at runtime.
-Lazily initialized on first request.
+TfidfTextRecommender — uses the existing scikit-learn TF-IDF vectorizer + matrix
+to find movies matching a free-text query.  No ML model, no OOM, instant responses.
+Lazily initialized on first request (imports from main.py at runtime).
 """
 
-import os
-import pickle
 import logging
+from typing import Optional
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
+class TfidfTextRecommender:
+    def __init__(self):
+        self._vectorizer = None
+        self._matrix = None
+        self._df = None
+        self._loader()
 
-class SemanticRecommender:
-    def __init__(self, data_dir: str = DATA_DIR):
-        self.data_dir = data_dir
-        self.model = None
-        self.index = None
-        self.meta = None
-        self.title_to_id = None
-        self.embeddings = None
-        self._load()
+    def _loader(self):
+        # Import the already-loaded globals from main.py (avoids circular import
+        # at module level; main.py already finished importing us before first request)
+        logger.info("Binding TF-IDF resources from main...")
+        try:
+            from main import tfidf_matrix, tfidf_obj, df
+            self._matrix = tfidf_matrix
+            self._vectorizer = tfidf_obj
+            self._df = df
+        except Exception as e:
+            raise RuntimeError(f"Cannot bind TF-IDF resources: {e}")
 
-    def _load(self):
-        index_path = os.path.join(self.data_dir, "faiss.index")
-        meta_path = os.path.join(self.data_dir, "movies_meta.pkl")
-        title_id_path = os.path.join(self.data_dir, "title_to_id.pkl")
-        emb_path = os.path.join(self.data_dir, "embeddings.npy")
-
-        # Load metadata first (fast, small files)
-        logger.info("Loading metadata...")
-        with open(meta_path, "rb") as f:
-            self.meta = pickle.load(f)
-        with open(title_id_path, "rb") as f:
-            self.title_to_id = pickle.load(f)
-        self.embeddings = np.load(emb_path)
-        logger.info(f"Metadata loaded: {len(self.meta)} movies")
-
-        # Memory-map the FAISS index to stay within 512MB
-        logger.info("Loading FAISS index (memory-mapped)...")
-        import faiss
-        self.index = faiss.read_index(index_path, faiss.IO_FLAG_MMAP)
-        logger.info(f"FAISS index loaded: {self.index.ntotal} vectors")
-
-        # Load embedding model last (largest memory spike)
-        logger.info("Loading embedding model (all-MiniLM-L6-v2 via fastembed)...")
-        from fastembed import TextEmbedding
-        self.model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
-        logger.info("Model loaded")
-
-        logger.info("SemanticRecommender ready")
+        if self._matrix is None or self._vectorizer is None:
+            raise RuntimeError("TF-IDF resources not loaded (pickle files missing?)")
+        logger.info(f"TF-IDF recommender ready ({self._matrix.shape[0]} movies)")
 
     def recommend_by_text(self, text: str, top_n: int = 12) -> list:
-        emb = np.array(list(self.model.embed([text]))).astype(np.float32)
-        distances, indices = self.index.search(emb, top_n)
-        return [self._build_result(int(i), float(d)) for i, d in zip(indices[0], distances[0]) if int(i) >= 0]
+        qv = self._vectorizer.transform([text])
+        scores = (self._matrix @ qv.T).toarray().ravel()
+        order = np.argsort(-scores)
+        results = []
+        seen = set()
+        for i in order:
+            ii = int(i)
+            title = str(self._df.iloc[ii].get("title", ""))
+            if not title or title.lower() in seen:
+                continue
+            seen.add(title.lower())
+            results.append(self._build_result(ii, float(scores[ii])))
+            if len(results) >= top_n:
+                break
+        return results
 
     def recommend_by_movie(self, title: str, top_n: int = 12) -> list:
-        movie_id = self.title_to_id.get(title.strip().lower())
-        if movie_id is None:
-            # try substring match
-            for key, val in self.title_to_id.items():
-                if title.lower() in key:
-                    movie_id = val
-                    break
-        if movie_id is None:
-            raise ValueError(f"Movie '{title}' not found in dataset")
-        query_vec = self.embeddings[movie_id].reshape(1, -1).astype(np.float32)
-        distances, indices = self.index.search(query_vec, top_n)
-        return [self._build_result(int(i), float(d)) for i, d in zip(indices[0], distances[0]) if int(i) >= 0]
+        """Use the existing title-based TF-IDF logic from main.py."""
+        try:
+            from main import tfidf_recommend_titles
+            recs = tfidf_recommend_titles(title, top_n)
+        except Exception as e:
+            raise ValueError(f"Title-based recommendation failed: {e}")
+        return [
+            self._build_result(
+                self._df[self._df["title"].str.lower() == t.lower()].index[0],
+                s,
+            )
+            for t, s in recs
+        ]
 
     def _build_result(self, idx: int, score: float) -> dict:
-        movie = self.meta.get(idx, {})
+        row = self._df.iloc[idx]
         return {
-            "movie_id": idx,
-            "title": movie.get("title", "Unknown"),
+            "movie_id": int(idx),
+            "title": str(row.get("title", "")),
             "score": round(score, 4),
-            "overview": movie.get("overview", ""),
-            "genres": movie.get("genres", ""),
-            "vote_average": movie.get("vote_average", 0.0),
-            "release_date": movie.get("release_date", None),
+            "overview": str(row.get("overview", "")),
+            "genres": str(row.get("genres", "")),
+            "vote_average": float(row.get("vote_average", 0) or 0),
+            "release_date": None,
         }

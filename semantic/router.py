@@ -1,5 +1,5 @@
 """
-FastAPI router for semantic recommendation endpoints.
+FastAPI router for TF-IDF text-based recommendation endpoints.
 Mounted at /recommend/story and /recommend/movie.
 """
 
@@ -7,7 +7,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
-from semantic.inference import SemanticRecommender, DATA_DIR
+from semantic.inference import TfidfTextRecommender
 from semantic.models import StoryRequest, MovieRequest, SemanticResponse
 from semantic.utils import enrich_with_tmdb
 
@@ -18,29 +18,17 @@ router = APIRouter(tags=["semantic"])
 _recommender = None
 
 
-def init_recommender():
-    """Pre-warm the recommender singleton during app startup."""
+def _get_recommender() -> TfidfTextRecommender:
     global _recommender
     if _recommender is None:
-        logger.info("Initializing SemanticRecommender...")
+        logger.info("Initializing TfidfTextRecommender...")
         try:
-            _recommender = SemanticRecommender(DATA_DIR)
+            _recommender = TfidfTextRecommender()
         except Exception as e:
-            logger.error(f"Failed to initialize SemanticRecommender: {e}")
-            raise
-
-
-def _get_recommender() -> SemanticRecommender:
-    global _recommender
-    if _recommender is None:
-        logger.info("Initializing SemanticRecommender...")
-        try:
-            _recommender = SemanticRecommender(DATA_DIR)
-        except Exception as e:
-            logger.error(f"Failed to initialize SemanticRecommender: {e}")
+            logger.error(f"Failed to initialize TfidfTextRecommender: {e}")
             raise HTTPException(
                 status_code=503,
-                detail=f"Semantic recommendation engine unavailable: {e}",
+                detail=f"Recommendation engine unavailable: {e}",
             )
     return _recommender
 
@@ -75,16 +63,13 @@ async def recommend_movie(req: MovieRequest):
         raise HTTPException(status_code=500, detail=f"Movie recommendation failed: {e}")
 
 
-
 @router.get("/recommend/semantic/health")
 async def semantic_health():
-    """Check if semantic recommender is available."""
     try:
         rec = _get_recommender()
         return {
             "status": "ok",
-            "index_size": rec.index.ntotal if rec.index else 0,
-            "model_loaded": rec.model is not None,
+            "model_loaded": True,
         }
     except Exception as e:
         return {"status": "error", "detail": str(e)}
